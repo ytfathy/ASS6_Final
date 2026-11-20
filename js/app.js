@@ -7,7 +7,7 @@ const sectionOf=h=>/^(lesson|book)/.test(h)?'book':/^(mcq|quiz)/.test(h)?'mcq':/
 App.nav=h=>{const s=sectionOf(h);
   $('#top').innerHTML=`<div class="wrap"><a class="brand" href="#home" aria-label="الصفحة الرئيسية"><img src="assets/logo-192.png" alt="شعار International Education Egypt" width="52" height="52"><span><b>الدراسات الاجتماعية</b><small>International Education Egypt • الصف السادس الابتدائي</small></span></a>
    ${App.game.hudHTML()}
-   <nav class="nav" aria-label="التنقل الرئيسي">${NAV.map(n=>`<a href="#${n[0]}" class="${s===n[0]?'on':''}" ${s===n[0]?'aria-current="page"':''} aria-label="${n[1]}">${icon(n[2])}<span>${n[1]}</span></a>`).join('')}</nav></div>`;App.game.paintSave();};
+   <nav class="nav" aria-label="التنقل الرئيسي">${NAV.map(n=>`<a href="#${n[0]}" class="${s===n[0]?'on':''}" ${s===n[0]?'aria-current="page"':''} aria-label="${n[1]}">${icon(n[2])}<span>${n[1]}</span></a>`).join('')}<a href="/auth/logout" style="text-decoration:none" aria-label="تسجيل الخروج"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"/></svg><span>خروج</span></a></nav></div>`;App.game.paintSave();};
 function foot(){$('#foot').innerHTML=`<div class="wrap"><img src="assets/logo-192.png" alt="International Education Egypt" width="40" height="40"><span>International Education Egypt — الدراسات الاجتماعية، الصف السادس الابتدائي، الفصل الدراسي الأول.<br>المحتوى من كتاب الطالب وملفات بنك الأسئلة وكتاب التقييمات المرفوعة فقط.</span><a href="#report">تقرير صلاحية المحتوى والمصادر</a></div>`;}
 
 /* three large illustrated doors (original SVG art) */
