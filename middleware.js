@@ -85,10 +85,36 @@ export default async function middleware(request) {
     if (!matchesLicense(rows, email, CODE)) return html(403, notSubscribedPage(email, CODE), out);
     approved.set(key, Date.now() + APPROVED_TTL_MS);
   }
+  if (path === '/api/exams') return exams(request, supabase, claims.sub, norm(CODE), out);
   // Let the browser keep program files and re-check them cheaply (304) instead of re-downloading everything each visit.
   // `private` keeps shared caches out; when auth cookies were just set, Supabase's own no-store headers are already in `out`.
   if (!out.has('Cache-Control')) out.set('Cache-Control', 'private, no-cache');
   return next({ headers: out });
+}
+
+/* The student's saved exams (Exam Builder), in the Supabase table `exams`. RLS lets each user reach only their own rows. */
+async function exams(request, supabase, uid, code, headers) {
+  const json = (status, body) => {
+    headers.set('Cache-Control', 'private, no-store');
+    headers.set('Content-Type', 'application/json; charset=utf-8');
+    return new Response(JSON.stringify(body), { status, headers });
+  };
+  const signal = AbortSignal.timeout(SUPABASE_TIMEOUT_MS), table = supabase.from('exams');
+  let r;
+  if (request.method === 'GET') r = await table.select('data').eq('program_code', code).abortSignal(signal);
+  else if (request.method === 'POST') {
+    // JSON only: a plain cross-site form cannot send it, so this also blocks CSRF.
+    if (!(request.headers.get('content-type') || '').startsWith('application/json')) return json(415, { error: 'JSON only' });
+    const text = await request.text();
+    if (text.length > 200000) return json(413, { error: 'Exam too large' });
+    let b; try { b = JSON.parse(text); } catch { return json(400, { error: 'Bad JSON' }); }
+    if (!b || typeof b.id !== 'string' || !/^\w{1,40}$/.test(b.id) || !b.data || typeof b.data !== 'object' || Array.isArray(b.data) || b.data.id !== b.id) return json(400, { error: 'Bad exam' });
+    r = await table.upsert({ user_id: uid, program_code: code, id: b.id, data: b.data, updated_at: new Date().toISOString() }).abortSignal(signal);
+  } else if (request.method === 'DELETE') {
+    r = await table.delete().eq('program_code', code).eq('id', new URL(request.url).searchParams.get('id') || '').abortSignal(signal);
+  } else return json(405, { error: 'Method not allowed' });
+  if (r.error) return json(500, { error: [r.error.code, r.error.message].filter(Boolean).join(' — ') });
+  return json(200, request.method === 'GET' ? (r.data || []).map(x => x.data) : { ok: true });
 }
 
 function redirect(url, to, headers) {

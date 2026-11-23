@@ -13,6 +13,7 @@ const USERS = {
 };
 // Rows as stored in the table (messy casing/spaces on purpose), returned per user like RLS would.
 const LICENSES = [{ email: '  Malek@Gmail.COM ', program_code: ' Math-G6' }, { email: 'sara@gmail.com', program_code: 'Science-G6' }];
+let EXAMS = [];
 let restFails = false, restHangs = false, restCalls = 0;
 
 const tokenUser = auth => {
@@ -31,6 +32,16 @@ const server = http.createServer((req, res) => {
     return req.on('end', () => JSON.parse(body).auth_code === 'good-code'
       ? send(200, { access_token: jwt(USERS.paid), refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: USERS.paid.email } })
       : send(400, { error: 'invalid_grant', error_description: 'Invalid code' }));
+  }
+  if (req.url.startsWith('/rest/v1/exams')) {
+    if (!u) return send(401, { message: 'no user' });
+    let body = ''; req.on('data', d => body += d);
+    return req.on('end', () => {
+      const q = new URL(req.url, 'http://x').searchParams;
+      if (req.method === 'GET') return send(200, EXAMS.filter(r => r.user_id === u.sub && 'eq.' + r.program_code === q.get('program_code')).map(r => ({ data: r.data })));
+      if (req.method === 'POST') { const row = JSON.parse(body); EXAMS = EXAMS.filter(r => !(r.user_id === row.user_id && r.id === row.id)).concat(row); res.writeHead(201); return res.end(); }
+      if (req.method === 'DELETE') { EXAMS = EXAMS.filter(r => !(r.user_id === u.sub && 'eq.' + r.id === q.get('id'))); res.writeHead(204); return res.end(); }
+    });
   }
   if (req.url.startsWith('/rest/v1/Licenses')) {
     restCalls++;
@@ -169,4 +180,30 @@ test('missing settings fail closed', async () => {
   const keep = process.env.PROGRAM_CODE;
   process.env.PROGRAM_CODE = '';
   try { assert.equal((await get('/')).status, 500); } finally { process.env.PROGRAM_CODE = keep; }
+});
+
+const api = (method, u, body, q = '') => mw(new Request('https://ass6final-qll2.vercel.app/api/exams' + q, {
+  method, headers: { cookie: cookieFor(u), ...(body ? { 'content-type': 'application/json' } : {}) }, body: body && JSON.stringify(body),
+}));
+
+test('exam API: a licensed student saves, lists and deletes only their own exams', async () => {
+  const ex = { id: 'e1', title: 'امتحان', items: ['m1-1-1'], ans: {} };
+  assert.equal((await api('POST', USERS.paid, { id: 'e1', data: ex })).status, 200);
+  assert.deepEqual(await (await api('GET', USERS.paid)).json(), [ex]);
+  assert.equal(EXAMS[0].user_id, 'u1');
+  assert.equal(EXAMS[0].program_code, 'math-g6');
+  assert.equal((await api('DELETE', USERS.paid, null, '?id=e1')).status, 200);
+  assert.deepEqual(await (await api('GET', USERS.paid)).json(), []);
+});
+
+test('exam API rejects bad input and non-JSON posts', async () => {
+  assert.equal((await api('POST', USERS.paid, { id: '../x', data: {} })).status, 400);
+  assert.equal((await api('POST', USERS.paid, { id: 'e2', data: { id: 'other' } })).status, 400);
+  const form = await mw(new Request('https://ass6final-qll2.vercel.app/api/exams', { method: 'POST', headers: { cookie: cookieFor(USERS.paid), 'content-type': 'application/x-www-form-urlencoded' }, body: 'id=e1' }));
+  assert.equal(form.status, 415);
+});
+
+test('exam API is closed to students without a license', async () => {
+  assert.equal((await api('GET', USERS.other)).status, 403);
+  assert.equal((await mw(new Request('https://ass6final-qll2.vercel.app/api/exams'))).status, 302);
 });

@@ -16,12 +16,12 @@ App.shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Mat
    - corrupted data is moved aside (…-corrupt) instead of being lost, and the last good copy (…-bak) is used to recover
    - pending changes are flushed immediately when the tab is hidden or closed                                        */
 const KEY='iee-ss6-t1-v1',VER=2,IDB='iee-ss6',STORE='kv';
-const fresh=()=>({v:VER,savedAt:0,lessons:{},last:null,resume:null,mcq:{ans:{},sessions:[],cur:null},assess:{},game:{},prefs:{zoom:1,shuffle:true,sfx:true,vol:.7}});
+const fresh=()=>({v:VER,savedAt:0,lessons:{},last:null,resume:null,mcq:{ans:{},sessions:[],cur:null},assess:{},exams:[],game:{},prefs:{zoom:1,shuffle:true,sfx:true,vol:.7}});
 let state=fresh(),storageOK=true,loadedFrom='new';
 function normalize(s){const d=fresh();if(!s||typeof s!=='object')return d;
   const o=Object.assign(d,s);o.mcq=Object.assign(fresh().mcq,s.mcq||{});o.prefs=Object.assign(fresh().prefs,s.prefs||{});
   ['lessons','assess','game'].forEach(k=>{if(!o[k]||typeof o[k]!=='object'||Array.isArray(o[k]))o[k]={};});
-  if(!o.mcq.ans||typeof o.mcq.ans!=='object')o.mcq.ans={};if(!Array.isArray(o.mcq.sessions))o.mcq.sessions=[];
+  if(!o.mcq.ans||typeof o.mcq.ans!=='object')o.mcq.ans={};if(!Array.isArray(o.mcq.sessions))o.mcq.sessions=[];if(!Array.isArray(o.exams))o.exams=[];
   o.fromV=s.v||1;o.v=VER;return o;}
 function readLocal(k){try{const raw=localStorage.getItem(k);if(!raw)return null;const s=JSON.parse(raw);if(!s||typeof s!=='object')throw 0;return s;}
   catch(e){try{const raw=localStorage.getItem(k);if(raw)localStorage.setItem(KEY+'-corrupt-'+Date.now(),raw);}catch(_){}return undefined;}}

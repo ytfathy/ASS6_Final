@@ -250,7 +250,7 @@ function profile(v){const g=G(),L=levelOf(g.xp),s=streak(),m=metrics(),dg=g.dail
 }
 
 /* ---------- welcome back ---------- */
-const SEC={book:['ذاكر من كتاب المدرسة','t'],mcq:['بنك الأسئلة','o'],assess:['كتاب التقييمات','p']};
+const SEC={book:['ذاكر من كتاب المدرسة','t'],mcq:['بنك الأسئلة','o'],assess:['كتاب التقييمات','p'],exam:['منشئ الامتحان','t'],info:['ملخصات الدروس','t']};
 function welcomeHTML(){const r=state.resume;if(!r||!App.bootSavedAt)return'';const g=G(),L=levelOf(g.xp),bk=App.progress.book(),mq=App.progress.mcq(),as=App.progress.assess(),sc=SEC[r.section]||['',''];
   return `<section class="welcome" aria-label="مرحبًا بعودتك"><div class="wb-txt"><p class="kick">مرحبًا بعودتك! 👋</p><h2>أنت تتقدّم بشكل رائع! لنكمل من حيث توقفت.</h2>
    <p class="wb-last"><span class="pill ${sc[1]}">${esc(sc[0])}</span> <b>${esc(r.label)}</b></p>

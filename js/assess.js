@@ -152,7 +152,7 @@ function sheet(v,m){
   v.onkeydown=e=>{if(e.key==='Enter'){const f=e.target.closest('figure[role=button]');if(f)f.click();}};
   draw();
 }
-App.assessGrade=grade;App.assessResult=result;
+App.assessGrade=grade;App.assessModel=model;App.assessResult=result;
 App.route(/^assess$/,hub);
 App.route(/^sheet-(a\d-\d+-\d+-\d+)$/,sheet);
 })();

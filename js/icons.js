@@ -1,6 +1,7 @@
 /* Inline SVG icon set (original drawings, stroke style). App.icon(name) returns markup. */
 (function(){
 const P={
+ print:'<path d="M7 9V3h10v6M7 17H4v-7a1 1 0 011-1h14a1 1 0 011 1v7h-3"/><path d="M7 14h10v7H7z"/>',
  trophy:'<path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4"/><path d="M12 14v3M8 21h8M9 21l1-4h4l1 4"/>',
  bolt:'<path d="M13 2L5 13h6l-1 9 8-11h-6z"/>',
  volume:'<path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"/>',
