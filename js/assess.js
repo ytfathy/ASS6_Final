@@ -82,6 +82,7 @@ function sheet(v,m){
   const st=state.assess[S.id]=state.assess[S.id]||{ans:{},grade:{}};st.ans=st.ans||{};st.grade=st.grade||{};
   const idx=flat.indexOf(X),prev=flat[idx-1],next=flat[idx+1];
   const answerable=S.items.filter(it=>ANSW[it.k]);
+  const ORD={},ordOf=it=>ORD[it.id]||(ORD[it.id]=App.order(it.opts.length));
   const val=it=>st.ans[it.id];
   const nAns=()=>answerable.filter(it=>filled(it,val(it))).length;
   App.markResume('sheet-'+S.id,S.title+' — '+X.l.name+': '+X.l.title,'assess');
@@ -89,7 +90,7 @@ function sheet(v,m){
   function field(it,r){const a=val(it),id=it.id,mk=(r&&r.auto&&r.marks)||{},cl=k=>k in mk?(mk[k]?' ok':' bad'):'',K=r&&it.a!==undefined?it.a:null;
     switch(it.k){
      case'w':return `<textarea data-id="${id}" aria-label="إجابتك" placeholder="اكتب إجابتك هنا…">${esc(a||'')}</textarea>`;
-     case'm':return `<div class="mopts" role="radiogroup">${it.opts.map((o,k)=>`<button role="radio" aria-checked="${a===k}" class="${a===k?'on':''}${K!==null?(k===K?' right':a===k?' wrong':''):''}" data-id="${id}" data-m="${k}">${esc(o)}</button>`).join('')}</div>`;
+     case'm':return `<div class="mopts" role="radiogroup">${ordOf(it).map(k=>`<button role="radio" aria-checked="${a===k}" class="${a===k?'on':''}${K!==null?(k===K?' right':a===k?' wrong':''):''}" data-id="${id}" data-m="${k}">${esc(it.opts[k])}</button>`).join('')}</div>`;
      case'tf':{const x=a||{};return `<div class="tf"><button class="${x.v==='t'?'on':''}" data-id="${id}" data-tf="t">صواب ✓</button><button class="${x.v==='f'?'on':''}" data-id="${id}" data-tf="f">خطأ ✗</button></div><input type="text" data-id="${id}" data-fix placeholder="التصويب (إن كانت العبارة خطأ)…" value="${esc(x.fix||'')}" aria-label="التصويب">`;}
      case't':{const x=a||{};const rows=it.rows.length?it.rows:Array.from({length:it.nrows},()=>null);const lab=it.rows.length>0;
        return `<div class="tblwrap"><table><thead><tr>${lab?'<th>وجه المقارنة</th>':''}${it.cols.map(c=>'<th>'+esc(c)+'</th>').join('')}</tr></thead><tbody>${rows.map((r,ri)=>`<tr>${lab?`<td class="rh">${esc(r)}</td>`:''}${it.cols.map((c,ci)=>`<td><textarea class="${cl(ri+'-'+ci)}" data-id="${id}" data-cell="${ri}-${ci}" aria-label="${esc(c)}">${esc(x[ri+'-'+ci]||'')}</textarea></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;}
@@ -135,7 +136,7 @@ function sheet(v,m){
     tick();};
   v.onclick=e=>{const t=e.target;let b;
     if((b=t.closest('[data-zoom]'))){App.lightbox([{src:b.dataset.zoom,cap:'من كتاب التقييمات'}],0);return;}
-    if((b=t.closest('[data-sp]'))){const it=itemOf(b.dataset.sp);App.tts.speak([{el:v.querySelector('#q-'+it.id),text:it.text+(it.opts&&it.k!=='map'?'. '+it.opts.join('. '):'')}],'قراءة السؤال');return;}
+    if((b=t.closest('[data-sp]'))){const it=itemOf(b.dataset.sp);App.tts.speak([{el:v.querySelector('#q-'+it.id),text:it.text+(it.k==='m'?'. '+ordOf(it).map(k=>it.opts[k]).join('. '):it.opts&&it.k!=='map'?'. '+it.opts.join('. '):'')}],'قراءة السؤال');return;}
     if((b=t.closest('[data-gr]'))){const id=b.dataset.id;st.grade[id]=st.grade[id]===b.dataset.gr?null:b.dataset.gr;if(!st.grade[id])delete st.grade[id];App.save();const y=window.scrollY;draw();window.scrollTo(0,y);return;}
     if((b=t.closest('[data-a]'))){const a=b.dataset.a;
       if(a==='submit'){const n=nAns();if(!n){App.toast('أجب عن بند واحد على الأقل قبل التسليم.');return;}

@@ -8,6 +8,8 @@ const esc=App.esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<
 App.ar=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
 App.pct=(a,b)=>b?Math.round(a/b*100):0;
 App.shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+/* random display order for a question's choices; answers stay stored as the original choice index */
+App.order=n=>App.shuffle(Array.from({length:n},(_,i)=>i));
 
 /* ---------- storage: automatic save on this device (localStorage + IndexedDB mirror) ----------
    - every meaningful change calls App.save() (debounced) — no Save button anywhere

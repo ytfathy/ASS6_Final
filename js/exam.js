@@ -38,7 +38,8 @@ function paintSync(){const el=$('#exsync');if(el)el.innerHTML=online?`<span clas
 function make(title,tids,counts){const items=[];
   TYPES.forEach(([k])=>{const n=counts[k]||0;if(!n)return;const lists=tids.map(t=>App.shuffle(POOL[t].filter(q=>q.k===k)));const got=[];
     for(let r=0;got.length<n&&lists.some(l=>l.length);r++)lists.forEach(l=>{if(got.length<n&&l.length)got.push(l.shift().id);});items.push(...got);});
-  return{id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,at:Date.now(),topics:tids,items,ans:{},submitted:null};}
+  return{id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,at:Date.now(),topics:tids,items,ans:{},submitted:null,ord:{}};}
+const ordOf=(e,q)=>{e.ord=e.ord||{};return e.ord[q.id]||(e.ord[q.id]=App.order(q.opts.length));};
 const avail=(tids,k)=>tids.reduce((s,t)=>s+POOL[t].filter(q=>q.k===k).length,0);
 const PTS={ok:1,part:.5,no:0};
 function result(e){let pts=0;const per={};e.items.forEach(id=>{const q=BYID[id];if(!q)return;const marks={};const g=App.assessGrade(q,e.ans[id],marks)||'no';per[id]={g,marks};pts+=PTS[g];});return{pts,n:e.items.length,per};}
@@ -73,9 +74,9 @@ function hub(v){
 }
 
 /* ---------- one question: on screen (answering / corrected) ---------- */
-function field(q,a,r,locked){const id=q.id,mk=(r&&r.marks)||{},cl=k=>k in mk?(mk[k]?' ok':' bad'):'',dis=locked?' disabled':'';
+function field(q,a,r,locked,e){const id=q.id,mk=(r&&r.marks)||{},cl=k=>k in mk?(mk[k]?' ok':' bad'):'',dis=locked?' disabled':'';
   switch(q.k){
-   case'm':return `<div class="mopts" role="radiogroup">${q.opts.map((o,k)=>`<button type="button" role="radio" aria-checked="${a===k}" class="${a===k?'on':''}${locked?(k===q.a?' right':a===k?' wrong':''):''}" data-id="${id}" data-m="${k}"${dis}>${esc(o)}</button>`).join('')}</div>`;
+   case'm':return `<div class="mopts" role="radiogroup">${ordOf(e,q).map(k=>`<button type="button" role="radio" aria-checked="${a===k}" class="${a===k?'on':''}${locked?(k===q.a?' right':a===k?' wrong':''):''}" data-id="${id}" data-m="${k}"${dis}>${esc(q.opts[k])}</button>`).join('')}</div>`;
    case'tf':{const x=a||{};return `<div class="tf"><button type="button" class="${x.v==='t'?'on':''}" data-id="${id}" data-tf="t"${dis}>صواب ✓</button><button type="button" class="${x.v==='f'?'on':''}" data-id="${id}" data-tf="f"${dis}>خطأ ✗</button></div><input type="text" data-id="${id}" data-fix placeholder="التصويب (إن كانت العبارة خطأ)…" value="${esc(x.fix||'')}" aria-label="التصويب"${dis}>`;}
    case'w':return `<textarea data-id="${id}" aria-label="إجابتك" placeholder="اكتب إجابتك هنا…"${dis}>${esc(a||'')}</textarea>`;
   }return '';}
@@ -92,7 +93,7 @@ function print(e,withKey){let p=$('#print');if(!p){p=document.createElement('div
    ${groups(e).map((g,gi)=>`<section><h2>السؤال ${ORD[gi]}: ${esc(g.t)}</h2><ol>${g.qs.map(q=>{n++;
      const body=q.k==='c'?esc(q.text).replace(/___/g,' ………………………… '):esc(q.text);
      return `<li>${q.pre?`<div class="pre">${esc(q.pre)}</div>`:''}<div>${q.k==='tf'?'( &nbsp;&nbsp; ) ':''}${body}</div>
-      ${withKey?`<div class="pk">${App.assessModel(q)}</div>`:q.k==='m'?`<div class="po">${q.opts.map((o,i)=>`<span>${'أبجده'[i]}) ${esc(o)}</span>`).join('')}</div>`:q.k==='w'?line+line+line:q.k==='tf'?'<div>التصويب: '+line+'</div>':''}</li>`;}).join('')}</ol></section>`).join('')}`;
+      ${withKey?`<div class="pk">${App.assessModel(q)}</div>`:q.k==='m'?`<div class="po">${ordOf(e,q).map((k,i)=>`<span>${'أبجده'[i]}) ${esc(q.opts[k])}</span>`).join('')}</div>`:q.k==='w'?line+line+line:q.k==='tf'?'<div>التصويب: '+line+'</div>':''}</li>`;}).join('')}</ol></section>`).join('')}`;
   window.print();}
 
 function take(v,m){
@@ -107,7 +108,7 @@ function take(v,m){
       <small>${e.topics.map(t=>(TOPICS.find(x=>x.id===t)||{}).title).filter(Boolean).map(esc).join(' • ')}</small></header>
      ${R?`<div class="summary"><div class="ring" style="--p:${App.pct(R.pts,R.n)};--c:var(--teal)"><b>${ar(App.pct(R.pts,R.n))}٪</b></div><div><p><b>الدرجة:</b> ${ar(R.pts)} من ${ar(R.n)}</p><p><small>تصحيح آلي؛ تصحيح الأسئلة المقالية تقريبي بالكلمات المفتاحية.</small></p></div></div>`:''}
      <div class="items">${groups(e).map((g,gi)=>`<div class="it-g">السؤال ${ORD[gi]}: ${esc(g.t)}</div>${g.qs.map(q=>{n++;const a=e.ans[q.id],r=R&&R.per[q.id];
-       return `<div class="q" id="q-${q.id}">${q.pre?`<div class="it-i">${esc(q.pre)}</div>`:''}<div class="qt"><span class="n">${ar(n)}</span><span class="tx">${q.k==='c'?cText(q,a,r,locked):esc(q.text)}</span></div>${field(q,a,r,locked)}
+       return `<div class="q" id="q-${q.id}">${q.pre?`<div class="it-i">${esc(q.pre)}</div>`:''}<div class="qt"><span class="n">${ar(n)}</span><span class="tx">${q.k==='c'?cText(q,a,r,locked):esc(q.text)}</span></div>${field(q,a,r,locked,e)}
         ${r?`<div class="res"><span class="pill ${r.g==='ok'?'g':r.g==='part'?'y':'r'}">${filled(q,a)?LAB[r.g]:'لم تُجب عن هذا السؤال'}</span></div><div class="model"><h5>${icon('check')} الإجابة النموذجية</h5><div>${App.assessModel(q)}</div></div>`:''}</div>`;}).join('')}`).join('')}</div>
      <div class="paper-foot"><span class="cnt" id="cnt">${ar(nAns())} / ${ar(e.items.length)} سؤالًا مُجابًا</span>
       ${locked?`<button class="btn sm orange" data-a="retry">${icon('redo')} إعادة الامتحان</button>`:`<button class="btn sm purple" data-a="submit">${icon('check')} تسليم وتصحيح</button>`}</div></div>`;}
@@ -119,7 +120,7 @@ function take(v,m){
       if(a==='print'||a==='key')return print(e,a==='key');
       if(a==='submit'){const n=nAns();if(!n)return App.toast('أجب عن سؤال واحد على الأقل قبل التسليم.');
         App.confirm('تسليم الامتحان؟',n<e.items.length?`أجبت عن ${ar(n)} من ${ar(e.items.length)} سؤالًا. بعد التسليم يُصحَّح الامتحان آليًّا.`:'بعد التسليم يُصحَّح الامتحان آليًّا وتظهر الإجابات النموذجية.','تسليم',()=>{e.submitted=Date.now();draw();push(e,1);window.scrollTo(0,0);App.toast('تم تصحيح الامتحان.');});}
-      else if(a==='retry')App.confirm('إعادة الامتحان؟','سيتم مسح إجاباتك في هذا الامتحان لتبدأ من جديد بنفس الأسئلة.','مسح والبدء من جديد',()=>{e.ans={};e.submitted=null;delete e.sc;push(e,1);draw();window.scrollTo(0,0);});
+      else if(a==='retry')App.confirm('إعادة الامتحان؟','سيتم مسح إجاباتك في هذا الامتحان لتبدأ من جديد بنفس الأسئلة.','مسح والبدء من جديد',()=>{e.ans={};e.ord={};e.submitted=null;delete e.sc;push(e,1);draw();window.scrollTo(0,0);});
       return;}
     if(e.submitted)return;
     if((b=t.closest('[data-m]'))){const id=b.dataset.id,k=+b.dataset.m;e.ans[id]=e.ans[id]===k?-1:k;App.$$(`[data-id="${id}"][data-m]`,v).forEach(x=>{const on=+x.dataset.m===e.ans[id];x.classList.toggle('on',on);x.setAttribute('aria-checked',on);});tick();}
